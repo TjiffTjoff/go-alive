@@ -11,7 +11,7 @@ import (
   "strings"
 )
 
-// Structs to hold client configuration
+// Structs to hold client and rabbitmq configuration
 type Client struct {
   Config  ClientConfig   `json:"client"`
 }
@@ -42,6 +42,8 @@ type KeepAlive struct {
   Timestamp     int64     `json:"timestamp"`
 }
 
+// Function to parse client and rabbitmq configuration files
+// Returns structs with the configuration data
 func parseConfig() (ClientConfig, RabbitmqConfig, error) {
   clientJson, err := ioutil.ReadFile("client.json")
   if err != nil {
@@ -56,16 +58,20 @@ func parseConfig() (ClientConfig, RabbitmqConfig, error) {
   var client Client
   var rabbitmq Rabbitmq
   
+  // Parse client configuration into Client struct
   if err := json.Unmarshal(clientJson, &client); err != nil {
     return ClientConfig{}, RabbitmqConfig{}, err
   }
   
+  // Parse rabbitmq configuration into Rabbitmq struct
   if err := json.Unmarshal(rabbitmqJson, &rabbitmq); err != nil {
     return ClientConfig{}, RabbitmqConfig{}, err
   }
   
-    return client.Config, rabbitmq.Config, nil
+  // Return ClientConfig and RabbitmqConfig structs
+  return client.Config, rabbitmq.Config, nil
 }
+ 
  
 // Function to establish connection to amqp server
 func connect(server string, port int, user string, password string, vhost string) (*amqp.Connection, error) {
@@ -160,8 +166,10 @@ func sendKeepAlive(channel *amqp.Channel, client ClientConfig) error {
   return nil
 }
 
+// Main function
 func main() {
 
+  // Get client and rabbitmq configuration
   client, rabbitmq, err := parseConfig()
   if err != nil {
     fmt.Printf("Configuration: %s \n", err)
@@ -169,7 +177,6 @@ func main() {
   }
     
   // Establishing connection to amqp server
-  //conn, err := connect("localhost", "5672", "sensu", "sensu")
   conn, err := connect(rabbitmq.Host, rabbitmq.Port, rabbitmq.User, rabbitmq.Password, rabbitmq.Vhost)
   if err != nil {
     fmt.Printf("Connection: %s \n", err)
